@@ -52,9 +52,9 @@ class Observable {
 	}
 
 	map(prejection: (v) => any) {
-		const context = this;
+		const self = this;
 		return new Observable(function (observer) {
-			const subscription = context.subscribe({
+			const subscription = self.subscribe({
 				next: (v) => {
 					// NOTICE: unhandle prejection error case
 					observer.next(prejection(v));
@@ -68,9 +68,9 @@ class Observable {
 	}
 
 	filter(predicate: (v) => boolean) {
-		const context = this;
+		const self = this;
 		return new Observable(function (observer) {
-			const subscription = context.subscribe({
+			const subscription = self.subscribe({
 				next: (v) => {
 					if (predicate(v)) {
 						observer.next(v);
@@ -86,28 +86,56 @@ class Observable {
 	concat(...observable: Observable[]) {
 		return new Observable(function (observer) {
 			const myObservables = observable.slice();
-			const currentSub: Subscription | null = null;
+			let currentSub: Subscription | null = null;
 			const processObservable = () => {
-				if (!myObservables.length) {
+				if (myObservables.length === 0) {
 					observer.complete();
-					return;
+				} else {
+					const observable = myObservables.shift();
+					currentSub = observable!?.subscribe({
+						next: (v) => {
+							observer.next(v);
+						},
+						error: (err) => {
+							observer.error(err);
+							currentSub?.unsubscribe();
+						},
+						complete: () => {
+							processObservable();
+						}
+					});
 				}
-				const observable = myObservables.shift();
-				const currentSub = observable?.subscribe({
+			}
+			processObservable();
+			return {
+				unsubscribe: () => {
+					currentSub!?.unsubscribe();
+				}
+			}
+		});
+	}
+
+	retry(num: number) {
+		const self = this;
+		return new Observable(function (observer) {
+			let currentSub: Subscription | null = null;
+			const processObservable = (currentAttemptNumber: number) => {
+				currentSub = self.subscribe({
 					next: (v) => {
 						observer.next(v);
 					},
+					complete: () => observer.complete(),
 					error: (err) => {
-						observer.error(err);
-						currentSub?.unsubscribe();
-					},
-					complete: () => {
-						processObservable();
+						if (currentAttemptNumber === 0) {
+							observer.error(err);
+						} else {
+							processObservable(currentAttemptNumber - 1);
+						}
 					}
-				});
+				})
 			}
-			processObservable();
 
+			processObservable(num);
 			return {
 				unsubscribe: () => {
 					currentSub!?.unsubscribe();
