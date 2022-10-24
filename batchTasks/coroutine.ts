@@ -1,12 +1,12 @@
 console.time('coroutine')
-var newsList = Array.from({ length: 100000 }, () => ({
+const newsList = Array.from({ length: 100000 }, () => ({
   uid: '8be34939-bc25-4b9e-999d-2daf19fbea7b',
   title:
     'Adipisicing do eu magna ex non est eu labore nisi duis enim elit.',
   tags: ['reprehenderit', 'cupidatat', 'ad', 'ea', 'labore'],
 }))
 
-var run = (coroutine, threhold = 1, options = { timeout: 160 }) => new Promise(
+const run = (coroutine, threhold = 1, options = { timeout: 160 }) => new Promise(
   (resolve, reject) => {
     var iterator = coroutine()
     var step = (deadline) => {
@@ -29,7 +29,7 @@ var run = (coroutine, threhold = 1, options = { timeout: 160 }) => new Promise(
     window.requestIdleCallback(step, options)
   })
 
-var reduce = function* (array, fn, initial) {
+const reduce = function* (array, fn, initial) {
   let result = initial || array[0]
   for (let i = 0; i < array.length; i++) {
     result = yield* fn(result, array[i], i, array)
@@ -37,7 +37,7 @@ var reduce = function* (array, fn, initial) {
   return result
 }
 
-var sliceTask = function (fn, interval = 10) {
+const sliceTask = function (fn, interval = 10) {
   let yieldInterval = 0
   return function* sliced(...args) {
     var result = fn(...args)
@@ -49,7 +49,7 @@ var sliceTask = function (fn, interval = 10) {
   }
 }
 
-var reduceAsync = (list, reducer, initial) => {
+const reduceAsync = (list, reducer, initial) => {
   var compute = function* () {
     return yield* reduce(list, sliceTask(reducer, 20), initial)
   }
